@@ -442,49 +442,47 @@ class Cameo5:
             if not comm:
                 return False
 
-            # Cameo 5 requires commands to be sent separately as complete units
             import time
 
-            # Log what we're doing
             x_mm = su_to_mm(x_su)
             y_mm = su_to_mm(y_su)
-            logger.info(f"Moving Tool {toolholder} to ABSOLUTE position: ({x_mm:.1f}, {y_mm:.1f})mm = ({x_su}, {y_su})SU")
+            logger.info(f"Moving Tool {toolholder} to ({x_mm:.1f}, {y_mm:.1f})mm = ({x_su}, {y_su})SU")
 
+            # *** Bug fix: FN0 / SO0 を move_to から除外 ***
+            # FN0 (向き変更) と SO0 (原点再設定) を毎回 move_to() で送ると
+            # SO0 が現在位置を原点に再設定してしまい、次の M コマンドが
+            # 相対座標として解釈され「加算された座標」に動く原因となる。
+            # これらは _create_job() のジョブ初期化時に一度だけ送る。
+            # tool positioning では PA + ツール選択 + パラメータ + M のみ送る。
             commands = [
-                f"FN0",                    # Portrait orientation (required)
-                f"SO0",                    # Origin at 0,0
-                f"PA",                     # Plot Absolute - use absolute coordinates (critical!)
-                f"J{toolholder}",          # Select tool
-                f"!1,{toolholder}",        # Minimum force for moving (just positioning)
-                f"FX30,{toolholder}",      # Maximum speed (30)
+                f"PA",                         # 絶対座標モード（重要）
+                f"J{toolholder}",              # ツール選択
+                f"!1,{toolholder}",            # 最小力（位置合わせのみ）
+                f"FX30,{toolholder}",          # 最高速度
             ]
 
-            # Cutter offset - 0 for pen, 18 for blade
+            # カッターオフセット（ペンは0、ブレードは18）
             offset = 0 if toolholder == 2 else 18
             commands.append(f"FC{offset},{offset},{toolholder}")
-            commands.append(f"FE0,0")      # Lift setting
 
-            # Send setup commands - use single command method for BLE
             for cmd in commands:
                 cmd_bytes = cmd.encode('ascii')
                 if self._connection_type == ConnectionType.USB:
                     comm.send_command(cmd_bytes)
                 else:
-                    # Use the new method that sends without chunking
                     comm.send_single_command_sync(cmd_bytes)
                 time.sleep(0.05)
 
-            # Send move command - M uses current coordinate system (now absolute due to PA)
-            # GPGL format: M<y>,<x> (note: Y comes first!)
+            # 移動コマンド（GPGL形式: M<Y>,<X>）
             move_cmd = f"M{y_su},{x_su}".encode('ascii')
-            logger.info(f"Sending GPGL command: M{y_su},{x_su} (absolute from home)")
+            logger.info(f"Sending GPGL: M{y_su},{x_su}")
 
             if self._connection_type == ConnectionType.USB:
                 comm.send_command(move_cmd)
             else:
                 comm.send_single_command_sync(move_cmd)
 
-            logger.info(f"Tool {toolholder} move command sent successfully")
+            logger.info(f"Tool {toolholder} move sent")
             return True
 
         except Exception as e:

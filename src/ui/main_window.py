@@ -359,30 +359,36 @@ class MainWindow(QMainWindow):
         builder.set_orientation(False)  # FN0 - Portrait
         builder.set_origin(0)           # SO0 - Origin
 
-        # Normalize DXF coordinates to device origin (0, 0).
+        # ─── 座標計算 ───────────────────────────────────────────────────────────
+        # [ツール位置オフセット] キャンバスでクリックしてセットした「ツール位置」を
+        # ジョブの開始点として使う。
         #
-        # The Silhouette Cameo workflow is:
-        #   1. Home (H) moves the tool to the physical origin chosen by the user.
-        #   2. All coordinates are absolute from that origin.
-        #   3. The software should NOT apply any additional offset — the user
-        #      positions the material on the mat and uses the device's own
-        #      controls to set the physical start point.
+        # H（ホーム）コマンドで装置の原点（0,0）に戻った後、
+        # 最初の M コマンドがツール位置（tool_x_mm, tool_y_mm）に移動する。
+        # → X・Y 両方向に動いてデザインの開始点へ向かうので
+        #   "X軸方向に動かない" 問題が解消される。
         #
-        # We therefore only normalize the DXF so that the design's bounding-box
-        # minimum maps to (0, 0), and flip the Y axis (DXF: Y-up, GPGL: Y-down).
+        # ツール位置がデフォルト (0, 0) の場合は従来と同じ動作。
+        tool_x_mm, tool_y_mm = self.canvas.get_tool_position()
+
         bounds = self._entities.get_bounding_box()
         if bounds and bounds.is_valid:
-            final_offset_x = -bounds.min_x   # shift so min_x → 0
-            final_offset_y = bounds.max_y     # Y-flip anchor: new_y = max_y - old_y
+            # X: DXF の最小 X を 0 に正規化し、ツール X 位置を加算
+            final_offset_x = -bounds.min_x + tool_x_mm
+            # Y: Y 反転アンカー (max_y) にツール Y 位置を加算
+            # y_gpgl = (max_y + tool_y) - y_dxf
+            # DXF 最上点 (y_dxf=max_y) → y_gpgl = tool_y_mm（カーソル位置）✓
+            final_offset_y = bounds.max_y + tool_y_mm
             logger.debug(
                 "DXF bounds: (%.1f, %.1f) – (%.1f, %.1f) mm  |  "
-                "size: %.1f × %.1f mm",
+                "size: %.1f × %.1f mm  |  tool pos: (%.1f, %.1f) mm",
                 bounds.min_x, bounds.min_y, bounds.max_x, bounds.max_y,
                 bounds.max_x - bounds.min_x, bounds.max_y - bounds.min_y,
+                tool_x_mm, tool_y_mm,
             )
         else:
-            final_offset_x = 0.0
-            final_offset_y = 0.0
+            final_offset_x = tool_x_mm
+            final_offset_y = tool_y_mm
 
         has_commands = False
 

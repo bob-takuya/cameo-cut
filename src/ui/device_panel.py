@@ -474,6 +474,14 @@ class DevicePanel(QWidget):
         self.progress_bar.setValue(0)
         self.job_started.emit()
 
+        # *** BLE 競合バグ修正 ***
+        # BLE 通信は asyncio._loop.run_until_complete() を使うがスレッドセーフではない。
+        # CutWorker（バックグラウンドスレッド）が BLE を使用中に、
+        # ステータスリフレッシュタイマー（メインスレッド）も BLE を呼ぶと
+        # コマンドが混線し、force/speed が壊れて「非常に濃い動作」が発生する。
+        # 送信中はタイマーを停止して BLE アクセスを 1 スレッドに限定する。
+        self._refresh_timer.stop()
+
         self._cut_worker = CutWorker(self._cameo, self._pending_job, self)
         self._cut_worker.progress_updated.connect(self._on_progress_updated)
         self._cut_worker.finished.connect(self._on_worker_finished)
@@ -494,6 +502,8 @@ class DevicePanel(QWidget):
         self.stop_btn.setEnabled(False)
         self._cut_worker = None
         self.job_completed.emit(success)
+        # 送信完了後にステータスリフレッシュを再開
+        self._refresh_timer.start()
 
     def _on_test_clicked(self):
         """Handle test cut button click"""
