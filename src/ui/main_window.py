@@ -233,8 +233,11 @@ class MainWindow(QMainWindow):
         self.device_panel.connection_changed.connect(self._on_connection_changed)
         self.device_panel.job_completed.connect(self._on_job_completed)
 
-        # Tool position changed -> move device
+        # Tool position changed -> move device + rebuild job
         self.canvas.tool_position_changed.connect(self._on_tool_position_changed)
+
+        # Design offset changed (drag mode) -> rebuild job to match new canvas position
+        self.canvas.design_offset_changed.connect(self._on_design_offset_changed)
 
     def _on_open_file(self):
         """Handle open file action"""
@@ -359,35 +362,46 @@ class MainWindow(QMainWindow):
         builder.set_orientation(False)  # FN0 - Portrait
         builder.set_origin(0)           # SO0 - Origin
 
-        # ─── 座標計算 ───────────────────────────────────────────────────────────
-        # キャンバス上のデザイン表示位置（design_offset）をそのままジョブの
-        # 開始オフセットとして使う。
+        # ─── 座標計算（キャンバス表示と GPGL を完全一致させる）────────────────────
         #
-        # ユーザーがキャンバス上でデザインをドラッグした位置 = 実際のカット位置。
-        # デザインをキャンバス中央に配置すれば中央からカットが始まる。
+        # キャンバスの描画変換（canvas.py _transform_point）:
+        #   x_canvas_mm = x_dxf + design_offset_x
+        #   y_canvas_mm = cutting_height - (y_dxf + design_offset_y)   ← Y反転
         #
-        # design_offset_x: DXF座標系でのX方向追加オフセット (mm)
-        # design_offset_y: DXF座標系でのY方向追加オフセット (mm)
-        #   → Y軸は後で to_gpgl() 内でフリップされるため正の値で「下方向」
+        # GPGL 計算:
+        #   x_gpgl = x_dxf + final_offset_x
+        #   y_gpgl = final_offset_y - y_dxf
+        #
+        # 一致条件:
+        #   final_offset_x = design_offset_x        ← DXF 正規化(-min_x)を廃止
+        #   final_offset_y = cutting_height - design_offset_y
+        #
+        # ツール位置（カーソルクリック）を開始オフセットとして追加:
+        #   final_offset_x += tool_x_mm
+        #   final_offset_y += tool_y_mm
+        #
+        # 効果:
+        #  ・キャンバス中央にデザインがあれば中央でカットされる
+        #  ・「Design Drag」でデザインを動かせばカット位置も追従する
+        #  ・「Tool Position」クリックで追加オフセットを指定できる
         design_offset_x, design_offset_y = self.canvas.get_design_offset()
+        tool_x_mm, tool_y_mm = self.canvas.get_tool_position()
+        _, _, cutting_height = self.canvas.get_cutting_area()
+
+        final_offset_x = design_offset_x + tool_x_mm
+        final_offset_y = cutting_height - design_offset_y + tool_y_mm
 
         bounds = self._entities.get_bounding_box()
         if bounds and bounds.is_valid:
-            # X: DXF の最小 X を 0 に正規化し、design_offset_x を加算
-            final_offset_x = -bounds.min_x + design_offset_x
-            # Y: Y 反転アンカー (max_y) に design_offset_y を加算
-            # y_gpgl = (max_y + design_offset_y) - y_dxf
-            final_offset_y = bounds.max_y + design_offset_y
             logger.debug(
-                "DXF bounds: (%.1f, %.1f) – (%.1f, %.1f) mm  |  "
-                "size: %.1f × %.1f mm  |  design_offset: (%.1f, %.1f) mm",
+                "DXF bounds: (%.1f,%.1f)–(%.1f,%.1f) mm  size:%.1f×%.1f  "
+                "design_offset:(%.1f,%.1f) tool:(%.1f,%.1f) cutting_h:%.1f  "
+                "→ final_offset:(%.1f,%.1f)",
                 bounds.min_x, bounds.min_y, bounds.max_x, bounds.max_y,
                 bounds.max_x - bounds.min_x, bounds.max_y - bounds.min_y,
-                design_offset_x, design_offset_y,
+                design_offset_x, design_offset_y, tool_x_mm, tool_y_mm,
+                cutting_height, final_offset_x, final_offset_y,
             )
-        else:
-            final_offset_x = design_offset_x
-            final_offset_y = design_offset_y
 
         has_commands = False
 
@@ -467,6 +481,16 @@ class MainWindow(QMainWindow):
         self.canvas.set_mode(mode)
         self.tool_mode_btn.setChecked(mode == CanvasMode.TOOL_POSITION)
         self.drag_mode_btn.setChecked(mode == CanvasMode.DESIGN_DRAG)
+
+    def _on_design_offset_changed(self, x_mm: float, y_mm: float):
+        """Design が DESIGN_DRAG モードでドラッグされたときにジョブを再生成する。
+
+        キャンバスの表示位置が変わった = カット位置も変わる。
+        _create_job() は毎回 get_design_offset() を参照するので、
+        _update_send_enabled() を呼ぶだけで最新の offset が反映される。
+        """
+        logger.debug("Design offset changed: (%.1f, %.1f) mm", x_mm, y_mm)
+        self._update_send_enabled()
 
     def _on_tool_position_changed(self, x_mm: float, y_mm: float):
         """Handle tool position change - move device to new position

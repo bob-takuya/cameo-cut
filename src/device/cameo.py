@@ -295,6 +295,53 @@ class Cameo5:
 
         return False
 
+    def _send_raw(self, cmd: bytes) -> bool:
+        """Send a single raw command (helper for home/load/unload)."""
+        try:
+            comm = self._get_comm()
+            if not comm:
+                return False
+            if self._connection_type == ConnectionType.USB:
+                comm.send_command(cmd)
+            else:
+                comm.send_single_command_sync(cmd)
+            return True
+        except Exception as e:
+            logger.error(f"Command failed ({cmd!r}): {e}")
+            return False
+
+    def home(self) -> bool:
+        """キャリッジをホーム位置に戻す (H コマンド)"""
+        if not self.is_connected:
+            return False
+        logger.info("Sending Home (H)")
+        return self._send_raw(b'H')
+
+    def load_mat(self) -> bool:
+        """マットをロード（ローラーに送り込む）(L コマンド)
+
+        Silhouette GPGL の L コマンドはロード/アンロードを切り替える。
+        マットが外にある場合はロード、マットが中にある場合はアンロードになる。
+        """
+        if not self.is_connected:
+            return False
+        logger.info("Sending Load (L)")
+        return self._send_raw(b'L')
+
+    def unload_mat(self) -> bool:
+        """マットをアンロード（ローラーから排出）
+
+        L コマンドはロード/アンロードのトグル。マットがロード済みの状態で
+        送ると排出する。ホームに戻してから排出を試みる。
+        """
+        if not self.is_connected:
+            return False
+        import time
+        logger.info("Sending Unload (H → L)")
+        self._send_raw(b'H')   # 先にキャリッジをホームへ
+        time.sleep(0.3)
+        return self._send_raw(b'L')
+
     def refresh_status(self) -> DeviceStatus:
         """Refresh device status"""
         if not self.is_connected:

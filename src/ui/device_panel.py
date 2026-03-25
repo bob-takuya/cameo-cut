@@ -329,6 +329,48 @@ class DevicePanel(QWidget):
         send_layout.addWidget(self.device_state_label)
 
         layout.addWidget(send_group)
+
+        # ─── Media Control Group ──────────────────────────────────────────────
+        media_group = QGroupBox("Media Control")
+        media_group_layout = QVBoxLayout(media_group)
+
+        media_btn_style = """
+            QPushButton {
+                padding: 6px;
+                border-radius: 4px;
+                font-size: 12px;
+            }
+            QPushButton:disabled { background-color: #555; color: #888; }
+        """
+
+        # Home button
+        self.home_btn = QPushButton("🏠 Home")
+        self.home_btn.setEnabled(False)
+        self.home_btn.setToolTip("カーリッジをホーム位置に戻す (H)")
+        self.home_btn.setStyleSheet(media_btn_style + "QPushButton { background-color: #607D8B; color: white; }")
+        self.home_btn.clicked.connect(self._on_home_clicked)
+        media_group_layout.addWidget(self.home_btn)
+
+        # Load / Unload row
+        load_row = QHBoxLayout()
+
+        self.load_btn = QPushButton("📥 Load")
+        self.load_btn.setEnabled(False)
+        self.load_btn.setToolTip("マットをローラーに送り込む (L)")
+        self.load_btn.setStyleSheet(media_btn_style + "QPushButton { background-color: #1976D2; color: white; }")
+        self.load_btn.clicked.connect(self._on_load_clicked)
+        load_row.addWidget(self.load_btn)
+
+        self.unload_btn = QPushButton("📤 Unload")
+        self.unload_btn.setEnabled(False)
+        self.unload_btn.setToolTip("マットをローラーから排出する (H → L)")
+        self.unload_btn.setStyleSheet(media_btn_style + "QPushButton { background-color: #5D4037; color: white; }")
+        self.unload_btn.clicked.connect(self._on_unload_clicked)
+        load_row.addWidget(self.unload_btn)
+
+        media_group_layout.addLayout(load_row)
+
+        layout.addWidget(media_group)
         layout.addStretch()
 
         # Track if device was stopped by user
@@ -560,13 +602,13 @@ class DevicePanel(QWidget):
     def _on_load_clicked(self):
         """Feed / load the cutting mat"""
         if self._cameo and self._cameo.is_connected:
-            self._cameo.load_media()
+            self._cameo.load_mat()
             self.device_state_label.setText("Status: Loading media...")
 
     def _on_unload_clicked(self):
         """Eject / unload the cutting mat"""
         if self._cameo and self._cameo.is_connected:
-            self._cameo.unload_media()
+            self._cameo.unload_mat()
             self.device_state_label.setText("Status: Unloading media...")
 
     @property
