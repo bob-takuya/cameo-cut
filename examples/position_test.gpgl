@@ -1,0 +1,39 @@
+; GPGL Command File
+; Description: Position test - draws 3 cross marks
+; Tool: Pen (Tool 2)
+;
+; Marks at:
+;   Cross 1: (10mm, 10mm) from origin
+;   Cross 2: (100mm, 10mm)
+;   Cross 3: (10mm, 100mm)
+;
+; Note: 1 SU = 0.05mm, so 10mm = 200 SU
+;
+
+; Setup
+FN0
+SO0
+J2
+!10,2
+FX5,2
+
+; Cross 1 at (10mm, 10mm)
+M200,150
+D200,250
+M150,200
+D250,200
+
+; Cross 2 at (100mm, 10mm)
+M200,1950
+D200,2050
+M150,2000
+D250,2000
+
+; Cross 3 at (10mm, 100mm)
+M2000,150
+D2000,250
+M1950,200
+D2050,200
+
+; Return home
+H

@@ -1,0 +1,12 @@
+# CameoCut - DXF to Silhouette Cameo 5
+# Core dependencies
+
+PyQt6>=6.5.0
+ezdxf>=1.1.0
+pyusb>=1.2.1
+numpy>=1.24.0
+bleak>=0.21.0  # Bluetooth Low Energy support
+
+# Optional: for building macOS .app bundle
+# py2app>=0.28.0
+# pyobjc-framework-Cocoa  # For Dock icon in dev mode

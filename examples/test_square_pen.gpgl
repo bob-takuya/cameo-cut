@@ -1,0 +1,22 @@
+; GPGL Command File
+; Description: Test draw - 10mm square using pen (Tool 2)
+; Position: (10mm, 10mm) from origin
+;
+
+; Setup
+FN0
+SO0
+J2
+!10,2
+FX5,2
+
+; Draw 10mm x 10mm square at (10mm, 10mm)
+; 10mm = 200 SU
+M200,200
+D200,400
+D400,400
+D400,200
+D200,200
+
+; Return home
+H

@@ -1,0 +1,174 @@
+{
+  "presets": [
+    {
+      "id": "vinyl",
+      "name": "Vinyl",
+      "name_ja": "ビニール",
+      "description": "Standard adhesive vinyl",
+      "force": 10,
+      "speed": 5,
+      "depth": 1,
+      "passes": 1,
+      "tool": 1
+    },
+    {
+      "id": "htv",
+      "name": "Heat Transfer Vinyl",
+      "name_ja": "アイロンプリント用",
+      "description": "Heat transfer vinyl (HTV)",
+      "force": 15,
+      "speed": 8,
+      "depth": 2,
+      "passes": 1,
+      "tool": 1
+    },
+    {
+      "id": "cardstock",
+      "name": "Cardstock",
+      "name_ja": "カードストック",
+      "description": "Standard cardstock paper",
+      "force": 20,
+      "speed": 4,
+      "depth": 3,
+      "passes": 1,
+      "tool": 1
+    },
+    {
+      "id": "paper",
+      "name": "Print Paper",
+      "name_ja": "印刷用紙",
+      "description": "Standard print paper",
+      "force": 15,
+      "speed": 10,
+      "depth": 2,
+      "passes": 1,
+      "tool": 1
+    },
+    {
+      "id": "cardstock_thick",
+      "name": "Thick Cardstock",
+      "name_ja": "厚手カードストック",
+      "description": "Heavy cardstock (200gsm+)",
+      "force": 25,
+      "speed": 3,
+      "depth": 4,
+      "passes": 1,
+      "tool": 1
+    },
+    {
+      "id": "chipboard",
+      "name": "Chipboard",
+      "name_ja": "チップボード",
+      "description": "Thin chipboard",
+      "force": 33,
+      "speed": 1,
+      "depth": 5,
+      "passes": 2,
+      "tool": 1
+    },
+    {
+      "id": "magnet",
+      "name": "Adhesive Magnet",
+      "name_ja": "マグネットシート",
+      "description": "Adhesive magnet sheet",
+      "force": 33,
+      "speed": 1,
+      "depth": 6,
+      "passes": 2,
+      "tool": 1
+    },
+    {
+      "id": "sticker",
+      "name": "Sticker Paper",
+      "name_ja": "ステッカー用紙",
+      "description": "Printable sticker paper",
+      "force": 20,
+      "speed": 5,
+      "depth": 2,
+      "passes": 1,
+      "tool": 1
+    },
+    {
+      "id": "clear_sticker",
+      "name": "Clear Sticker",
+      "name_ja": "透明ステッカー",
+      "description": "Clear/transparent sticker",
+      "force": 33,
+      "speed": 4,
+      "depth": 3,
+      "passes": 2,
+      "tool": 1
+    },
+    {
+      "id": "fabric",
+      "name": "Fabric",
+      "name_ja": "布",
+      "description": "Fabric with stabilizer",
+      "force": 33,
+      "speed": 5,
+      "depth": 5,
+      "passes": 1,
+      "tool": 1
+    },
+    {
+      "id": "kraft",
+      "name": "Kraft Paper",
+      "name_ja": "クラフト紙",
+      "description": "Kraft paper",
+      "force": 20,
+      "speed": 3,
+      "depth": 3,
+      "passes": 1,
+      "tool": 1
+    },
+    {
+      "id": "score",
+      "name": "Score Line",
+      "name_ja": "スコアライン",
+      "description": "Scoring for folding (light pressure)",
+      "force": 10,
+      "speed": 8,
+      "depth": 1,
+      "passes": 1,
+      "tool": 1
+    },
+    {
+      "id": "draw",
+      "name": "Drawing (Pen)",
+      "name_ja": "ペン描画",
+      "description": "Drawing with sketch pen",
+      "force": 5,
+      "speed": 10,
+      "depth": 0,
+      "passes": 1,
+      "tool": 2
+    }
+  ],
+  "default_color_mappings": {
+    "1": {
+      "preset": "cardstock",
+      "action": "cut",
+      "name": "Red - Cut"
+    },
+    "5": {
+      "preset": "score",
+      "action": "score",
+      "name": "Blue - Score"
+    },
+    "3": {
+      "preset": "draw",
+      "action": "draw",
+      "name": "Green - Draw"
+    },
+    "7": {
+      "preset": "cardstock",
+      "action": "cut",
+      "name": "White - Cut"
+    },
+    "0": {
+      "preset": "cardstock",
+      "action": "cut",
+      "name": "Black - Cut"
+    }
+  }
+}
