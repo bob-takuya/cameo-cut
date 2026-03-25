@@ -420,6 +420,34 @@ class Cameo5:
 
         return False
 
+    def load_media(self) -> bool:
+        """Feed / load the cutting mat (FF1 command)"""
+        if not self.is_connected:
+            return False
+        try:
+            comm = self._get_comm()
+            if comm:
+                comm.send_command(b"FF1")
+                logger.info("Load media command sent")
+                return True
+        except Exception as e:
+            logger.error(f"Load media failed: {e}")
+        return False
+
+    def unload_media(self) -> bool:
+        """Eject / unload the cutting mat (FF0 command)"""
+        if not self.is_connected:
+            return False
+        try:
+            comm = self._get_comm()
+            if comm:
+                comm.send_command(b"FF0")
+                logger.info("Unload media command sent")
+                return True
+        except Exception as e:
+            logger.error(f"Unload media failed: {e}")
+        return False
+
     def move_to(self, x_su: int, y_su: int, toolholder: int = 2) -> bool:
         """Move tool to specified position using ABSOLUTE coordinates from device home
 

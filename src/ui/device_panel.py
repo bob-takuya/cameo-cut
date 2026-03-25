@@ -249,6 +249,41 @@ class DevicePanel(QWidget):
         self.test_btn.clicked.connect(self._on_test_clicked)
         send_layout.addWidget(self.test_btn)
 
+        # ── Home / Load / Unload ──────────────────────────────────────
+        media_layout = QHBoxLayout()
+
+        self.home_btn = QPushButton("🏠 Home")
+        self.home_btn.setEnabled(False)
+        self.home_btn.setToolTip("キャリッジをホーム位置に戻す (H コマンド)")
+        self.home_btn.clicked.connect(self._on_home_clicked)
+        self.home_btn.setStyleSheet("""
+            QPushButton { padding: 6px; border-radius: 4px; }
+            QPushButton:disabled { color: #888; }
+        """)
+        media_layout.addWidget(self.home_btn)
+
+        self.load_btn = QPushButton("⬇ Load")
+        self.load_btn.setEnabled(False)
+        self.load_btn.setToolTip("カッティングマットを引き込む (FF1 コマンド)")
+        self.load_btn.clicked.connect(self._on_load_clicked)
+        self.load_btn.setStyleSheet("""
+            QPushButton { padding: 6px; border-radius: 4px; }
+            QPushButton:disabled { color: #888; }
+        """)
+        media_layout.addWidget(self.load_btn)
+
+        self.unload_btn = QPushButton("⬆ Unload")
+        self.unload_btn.setEnabled(False)
+        self.unload_btn.setToolTip("カッティングマットを排出する (FF0 コマンド)")
+        self.unload_btn.clicked.connect(self._on_unload_clicked)
+        self.unload_btn.setStyleSheet("""
+            QPushButton { padding: 6px; border-radius: 4px; }
+            QPushButton:disabled { color: #888; }
+        """)
+        media_layout.addWidget(self.unload_btn)
+
+        send_layout.addLayout(media_layout)
+
         # Stop/Resume buttons
         stop_resume_layout = QHBoxLayout()
 
@@ -386,6 +421,9 @@ class DevicePanel(QWidget):
         self.connect_btn.setText("Disconnect")
         self.refresh_btn.setEnabled(True)
         self.test_btn.setEnabled(True)
+        self.home_btn.setEnabled(True)
+        self.load_btn.setEnabled(True)
+        self.unload_btn.setEnabled(True)
         self._refresh_timer.start()
         self.connection_changed.emit(True)
 
@@ -405,6 +443,9 @@ class DevicePanel(QWidget):
         self.refresh_btn.setEnabled(False)
         self.send_btn.setEnabled(False)
         self.test_btn.setEnabled(False)
+        self.home_btn.setEnabled(False)
+        self.load_btn.setEnabled(False)
+        self.unload_btn.setEnabled(False)
         self.status_label.setText("Not connected")
         self.status_indicator.setStyleSheet("color: #888; font-size: 16px;")
         self.device_info.setText("")
@@ -509,6 +550,24 @@ class DevicePanel(QWidget):
         """Handle test cut button click"""
         if self._cameo and self._cameo.is_connected:
             self._cameo.test_cut()
+
+    def _on_home_clicked(self):
+        """Send carriage to home position"""
+        if self._cameo and self._cameo.is_connected:
+            self._cameo.home()
+            self.device_state_label.setText("Status: Homing...")
+
+    def _on_load_clicked(self):
+        """Feed / load the cutting mat"""
+        if self._cameo and self._cameo.is_connected:
+            self._cameo.load_media()
+            self.device_state_label.setText("Status: Loading media...")
+
+    def _on_unload_clicked(self):
+        """Eject / unload the cutting mat"""
+        if self._cameo and self._cameo.is_connected:
+            self._cameo.unload_media()
+            self.device_state_label.setText("Status: Unloading media...")
 
     @property
     def is_connected(self) -> bool:
