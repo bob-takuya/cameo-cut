@@ -397,30 +397,26 @@ class Cameo5:
                     if progress_callback:
                         progress_callback(sent_bytes, total_bytes)
             else:
-                # Bluetooth: send each command separately
-                # Split by ETX and send individually
-                commands = job.commands.split(b'\x03')
-                total_cmds = len([c for c in commands if c])
-                sent_cmds = 0
+                # Bluetooth: send all commands in one batch via send_sync.
+                # bluetooth.py already handles BLE MTU chunking (20 bytes/chunk,
+                # 20 ms inter-chunk delay) internally.  Sending command-by-command
+                # with an extra 50 ms sleep was throttling throughput to ~20 cmds/s
+                # and causing the device to pause between every D command.
+                total_bytes = len(job.commands)
 
                 # Log first few commands for debugging
-                logger.info(f"Sending {total_cmds} commands via Bluetooth:")
-                for i, cmd in enumerate(commands[:10]):
+                commands_preview = job.commands.split(b'\x03')
+                total_cmds = len([c for c in commands_preview if c])
+                logger.info(f"Sending {total_cmds} commands ({total_bytes} bytes) via Bluetooth (batch):")
+                for i, cmd in enumerate(commands_preview[:10]):
                     if cmd:
                         logger.info(f"  [{i}] {cmd.decode('ascii', errors='replace')}")
                 if total_cmds > 10:
                     logger.info(f"  ... and {total_cmds - 10} more commands")
 
-                for cmd in commands:
-                    if not cmd:
-                        continue
-                    # Send command with ETX
-                    comm.send_single_command_sync(cmd + b'\x03')
-                    sent_cmds += 1
-                    time.sleep(0.05)  # Small delay between commands
-
-                    if progress_callback:
-                        progress_callback(sent_cmds, total_cmds)
+                comm.send_sync(job.commands)
+                if progress_callback:
+                    progress_callback(total_bytes, total_bytes)
 
             logger.info(f"Sent job '{job.name}': {len(job.commands)} bytes, {total_cmds if self._connection_type == ConnectionType.BLUETOOTH else 'chunked'} commands")
             return True
